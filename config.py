@@ -1,8 +1,13 @@
+import os
+
 class Config(object):
 	DEBUG = False
 	TESTING = False
 	CSRF_ENABLED = True
 	SECRET_KEY = '43DK&$GBV$MSHY'
+	SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+	DEBUG = False
+
 
 class ProductionConfig(Config):
 	DEVELOPMENT = True
