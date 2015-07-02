@@ -5,14 +5,16 @@ class Result(db.Model):
 	__tablename__ = 'results'
 
 	id = db.Column(db.Integer, primary_key=True)
-	url = db.Column(db.String())
-	result_all = db.Column(JSON)
-	result_no_stop_words = db.Column(JSON)
+	return_code = db.Column(db.Integer)
+	file_to_convert = db.Column(db.String())
+	output1 = db.Column(db.String)
+	output2 = db.Column(db.String)
 
-	def __init__(self, url, result_all, result_no_stop_words):
-		self.url = url
-		self.result_all = result_all
-		self.result_no_stop_words = result_no_stop_words
+	def __init__(self, return_code, file_to_convert, output1, output2):
+		self.return_code = return_code
+		self.file_to_convert = file_to_convert
+		self.output1 = output1
+		self.output2 = output2
 
 	def __repr__(self):
 		return '<id {}>'.format(self.id)
