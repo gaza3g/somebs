@@ -1,0 +1,3 @@
+Video Converter (VidCon)
+ ☐ Call ffmpeg by subprocess
+ ☐ Handle exceptions

@@ -14,6 +14,9 @@ import re
 import nltk
 from converter import Converter
 
+import sys
+import subprocess
+
 #################
 # configuration #
 #################
@@ -37,26 +40,90 @@ def count_and_save_words(url):
 
     c = Converter()
 
-    # info = c.probe('test1.ogg')
     vidcon_root = '/Volumes/EdulearnNetUpload/asknlearn/vidcon/'
 
-    conv = c.convert(vidcon_root + 'input/test1.ogg', vidcon_root + 'output/output.mkv',
-                     {
-                         'format': 'mkv',
-                         'audio': {
-                             'codec': 'mp3',
-                             'samplerate': 44100,
-                             'channels': 2
-                         },
-                         'video': {
-                             'codec': 'h264',
-                             'width': 320,
-                             'height': 240,
-                             'fps': 24
-                         }})
+    input_dir = 'input/'
+    output_dir = 'output/'
+    exc = ""
 
-    for timecode in conv:
-    	print("Converting...")
+    # input_file = 'test1.ogg'
+    # output_file = 'out1.mkv'
+
+    # input_path = os.path.join(vidcon_root + input_dir, input_file)
+    # output_path = os.path.join(vidcon_root + output_dir, output_file)
+
+    input_path = "/Volumes/EdulearnNetUpload/asknlearn/vidcon/input/test1.ogg"
+    output_path = "/Volumes/EdulearnNetUpload/asknlearn/vidcon/output/out1.mp4"
+
+    # ffmpeg -i test1.ogg -acodec copy -vcodec libx264 -s 854x480 out2.mp4
+    # whatever = subprocess.call(['ffmpeg', '-i', input_file, '-acodec',
+    #                  'copy', '-vcodec', 'libx264', '-s', '854x480', output_file])
+
+
+#ffmpeg -i "/Volumes/EdulearnNetUpload/asknlearn/vidcon/input/test1.ogg" -acodec copy -vcodec libx264 -s 854x480 "/Volumes/EdulearnNetUpload/asknlearn/vidcon/output/out1.mp4"
+
+    cmd = "ffmpeg -i \"{infile}\" -acodec copy -vcodec libx264 -s 854x480 \"{outfile}\"".format(
+        infile=input_path, outfile=output_path)
+
+    #['MP4Box', '-cat', 'test_0.mp4', '-cat', 'test_1.mp4', '-cat', 'test_2.mp4', '-new', 'test_012d.mp4']
+    ffmpeg_exec = ['ffmpeg', '-i', "{}".format(input_path), "-acodec", "copy", "-vcodec", "libx264", "-s", "854x480", "{}".format(output_path)]
+
+    # return_code = subprocess.Popen(cmd, bufsize=2048,
+    #                                stderr=subprocess.STDOUT,
+    #                                stdout=subprocess.PIPE).wait()
+
+
+
+    try:
+	    # return_code = subprocess.Popen(cmd, bufsize=2048, shell=True,
+	    #                                stderr=subprocess.STDOUT,
+	    #                                stdout=subprocess.PIPE).wait()
+	    return_code = subprocess.Popen(ffmpeg_exec, bufsize=2048,
+	                                   stderr=subprocess.STDOUT,
+	                                   stdout=subprocess.PIPE).wait()
+        # output = subprocess.check_output(
+        # cmd.encode(sys.getfilesystemencoding()), stderr=subprocess.STDOUT)
+        # subprocess.call(["pwd"], shell=True)
+        # subprocess.call(
+        #     ["cd /Volumes/EdulearnNetUpload/asknlearn/vidcon/input/"], shell=True)
+		# return_code = subprocess.Popen(cmd, shell=True, bufsize=2048,stderr=subprocess.STDOUT,stdout=subprocess.PIPE).wait()
+# if output:
+#     return (1, output)
+# else:
+#     return (0, "")
+    except Exception as e:
+        exc = "{}".format(e)
+
+    # save the results
+    try:
+        result = Result(
+            url=cmd,
+            result_all=return_code,
+            result_no_stop_words=exc)
+        db.session.add(result)
+        db.session.commit()
+        return result.id
+    except:
+        errors.append("Unable to add item to database.")
+        return {"error": errors}
+
+    # conv = c.convert(input_path, output_path,
+    #                  {
+    #                      'format': 'mkv',
+    #                      'audio': {
+    #                          'codec': 'mp3',
+    #                          'samplerate': 44100,
+    #                          'channels': 2
+    #                      },
+    #                      'video': {
+    #                          'codec': 'h264',
+    #                          'width': 320,
+    #                          'height': 240,
+    #                          'fps': 24
+    #                      }})
+
+    # for timecode in conv:
+    # 	print("Converting...")
 
     # try:
     #     r = requests.get(url)
@@ -130,7 +197,7 @@ def get_results(job_key):
         )[:10]
         return jsonify(results)
     else:
-    	return job.get_status(), 202
+        return job.get_status(), 202
 
 
 if __name__ == '__main__':
