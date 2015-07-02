@@ -1,5 +1,6 @@
 alembic==0.7.6
 arrow==0.5.4
+av==0.2.4
 beautifulsoup4==4.3.2
 click==4.0
 Flask==0.10.1

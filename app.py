@@ -12,6 +12,7 @@ import os
 import requests
 import re
 import nltk
+from converter import Converter
 
 #################
 # configuration #
@@ -29,109 +30,108 @@ from models import *
 # helper #
 ##########
 
+
 def count_and_save_words(url):
 
     errors = []
 
-    try:
-        r = requests.get(url)
-    except:
-        errors.append(
-            "Unable to get URL. Please make sure it's valid and try again."
-        )
-        return {"error": errors}
+    c = Converter()
+
+    # info = c.probe('test1.ogg')
+    vidcon_root = '/Volumes/EdulearnNetUpload/asknlearn/vidcon/'
+
+    conv = c.convert(vidcon_root + 'input/test1.ogg', vidcon_root + 'output/output.mkv',
+                     {
+                         'format': 'mkv',
+                         'audio': {
+                             'codec': 'mp3',
+                             'samplerate': 44100,
+                             'channels': 2
+                         },
+                         'video': {
+                             'codec': 'h264',
+                             'width': 320,
+                             'height': 240,
+                             'fps': 24
+                         }})
+
+    for timecode in conv:
+    	print("Converting...")
+
+    # try:
+    #     r = requests.get(url)
+    # except:
+    #     errors.append(
+    #         "Unable to get URL. Please make sure it's valid and try again."
+    #     )
+    #     return {"error": errors}
 
     # text processing
-    raw = BeautifulSoup(r.text).get_text()
-    nltk.data.path.append('./nltk_data/')  # set the path
-    tokens = nltk.word_tokenize(raw)
-    text = nltk.Text(tokens)
+    # raw = BeautifulSoup(r.text).get_text()
+    # nltk.data.path.append('./nltk_data/')  # set the path
+    # tokens = nltk.word_tokenize(raw)
+    # text = nltk.Text(tokens)
 
     # remove punctuation, count raw words
-    nonPunct = re.compile('.*[A-Za-z].*')
-    raw_words = [w for w in text if nonPunct.match(w)]
-    raw_word_count = Counter(raw_words)
+    # nonPunct = re.compile('.*[A-Za-z].*')
+    # raw_words = [w for w in text if nonPunct.match(w)]
+    # raw_word_count = Counter(raw_words)
 
     # stop words
-    no_stop_words = [w for w in raw_words if w.lower() not in stops]
-    no_stop_words_count = Counter(no_stop_words)
+    # no_stop_words = [w for w in raw_words if w.lower() not in stops]
+    # no_stop_words_count = Counter(no_stop_words)
 
     # save the results
-    try:
-        result = Result(
-            url=url,
-            result_all=raw_word_count,
-            result_no_stop_words=no_stop_words_count
-        )
-        db.session.add(result)
-        db.session.commit()
-        return result.id
-    except:
-        errors.append("Unable to add item to database.")
-        return {"error": errors}
+    # try:
+    #     result = Result(
+    #         url=url,
+    #         result_all=raw_word_count,
+    #         result_no_stop_words=no_stop_words_count
+    #     )
+    #     db.session.add(result)
+    #     db.session.commit()
+    #     return result.id
+    # except:
+    #     errors.append("Unable to add item to database.")
+    #     return {"error": errors}
 
 ##########
 # routes #
 ##########
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
-	results = {}
-	if request.method == "POST":
-		# get url that the person has entered
-		url = request.form['url']
-		if 'http://' not in url[:7]:
-			url = 'http://' + url
-		job = q.enqueue_call(
-			func = count_and_save_words, args=(url,), result_ttl=5000
-		)
-		print(job.get_id())
+    results = {}
+    if request.method == "POST":
+        # get url that the person has entered
+        url = request.form['url']
+        if 'http://' not in url[:7]:
+            url = 'http://' + url
+        job = q.enqueue_call(
+            func=count_and_save_words, args=(url,), result_ttl=5000
+        )
+        print(job.get_id())
 
-	return render_template('index.html', results=results)
+    return render_template('index.html', results=results)
+
 
 @app.route("/results/<job_key>", methods=['GET'])
 def get_results(job_key):
 
-	job = Job.fetch(job_key, connection=conn)
+    job = Job.fetch(job_key, connection=conn)
 
-	if job.is_finished:
-		result = Result.query.filter_by(id=job.result).first()
-		results = sorted(
-			result.result_no_stop_words.items(),
-			key=operator.itemgetter(1),
-			reverse=True
-		)[:10]
-		return jsonify(results)
-	else:
-		return "Still working", 202
-	
+    if job.is_finished:
+        result = Result.query.filter_by(id=job.result).first()
+        results = sorted(
+            result.result_no_stop_words.items(),
+            key=operator.itemgetter(1),
+            reverse=True
+        )[:10]
+        return jsonify(results)
+    else:
+    	return job.get_status(), 202
+
 
 if __name__ == '__main__':
-	app.run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    app.run()
