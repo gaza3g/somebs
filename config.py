@@ -5,7 +5,7 @@ class Config(object):
 	TESTING = False
 	CSRF_ENABLED = True
 	SECRET_KEY = '43DK&$GBV$MSHY'
-	SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URL']
+	SQLALCHEMY_DATABASE_URI = "postgresql://localhost/vidcon"
 	DEBUG = False
 
 
